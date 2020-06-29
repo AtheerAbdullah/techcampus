@@ -1,0 +1,120 @@
+import heapq
+import random
+
+  board = []
+  with open('input.txt') as f:
+          board = f.readlines()
+
+  def search(x, y):
+    if board[x][y] == 'G':
+      return True
+    else:
+      return False
+
+  class Cell():
+    def __init__(self, x, y, reachable):
+      self.reachable = reachable
+      self.x = x
+      self.y = y
+      self.parent = None
+
+      self.g = 0
+      self.h = 0
+      self.f = 0
+
+    def __lt__(self, other):
+      return self.f < other.f
+
+  class AStar(object):
+    def __init__(self):
+
+      self.opened = []
+
+      heapq.heapify(self.opened)
+
+      self.closed = []
+      self.cells = []
+
+      self.grid_cols = len(board[0]) - 1
+      self.grid_rows =  len(board)
+      for s in range(len(board)):
+        for ch in range(len(board[0]) - 1):
+          if board[s][ch] == 'S':
+            self.start = Cell(s,ch,True)
+          elif board[s][ch] == 'G':
+            self.end = Cell(s,ch,True)
+          if board[s][ch] == 'S' or board[s][ch] == 'G' or board[s][ch] == 'P':
+            self.cells.append(Cell(s,ch,True))
+          else:
+            self.cells.append(Cell(s,ch,False))
+
+    def get_heuristic(self, cell): #  ( (h2))معينه واخترنا القيمه 10 حتى يسهل علينا الحساب
+      return (abs(cell.x - self.end.x) + abs(cell.y - self.end.y))
+
+    def get_cell(self, x, y):
+      return self.cells[x * self.grid_cols + y]
+
+    def get_adjacent_cells(self, cell):
+
+      cells = []
+      if cell.x + 1 < self.grid_rows:
+        cells.append(self.get_cell(cell.x + 1, cell.y))
+      if cell.y - 1 >= 0:
+        cells.append(self.get_cell(cell.x, cell.y - 1))
+      if cell.x - 1 >= 0:
+        cells.append(self.get_cell(cell.x - 1, cell.y))
+      if cell.y + 1 < self.grid_cols:
+        cells.append(self.get_cell(cell.x, cell.y + 1))
+      return cells
+
+    def display_path(self):
+      cell = self.end
+      while cell.parent is not self.start and cell.parent is not None:
+        cell = cell.parent
+        if cell is not self.start and cell is not self.end:
+          board[cell.x] = list(board[cell.x])
+          board[cell.x][cell.y] = '*'
+          board[cell.x] = "".join(board[cell.x])
+      for s in board:
+        print(s)
+
+    def update_cell(self, adj, cell):
+
+      adj.g = cell.g + 10
+
+      adj.h = self.get_heuristic(adj)
+
+      adj.parent = cell
+
+      adj.f = adj.h + adj.g
+
+
+    def process(self):
+
+      heapq.heappush(self.opened, self.start)
+
+      while len(self.opened):
+        cell = heapq.heappop(self.opened)
+
+        self.closed.append(cell)
+
+        if search(cell.x , cell.y):
+          self.end = cell
+          self.display_path()
+          break
+
+        adj_cells = self.get_adjacent_cells(cell)
+        for adj_cell in adj_cells:
+          if adj_cell.reachable and adj_cell not in self.closed:
+            if adj_cell in self.opened:
+              if adj_cell.g > cell.g + 10:
+                self.update_cell(adj_cell, cell)
+              else:
+                heapq.heappush(self.opened, adj_cell)
+                self.update_cell(adj_cell, cell)
+      if self.end.parent == None:
+        print("no solution found")
+
+  if __name__ == '__main__':
+    A=AStar()
+    A.process()
